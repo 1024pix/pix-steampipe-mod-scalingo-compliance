@@ -1,6 +1,6 @@
 # Pix & Scalingo compliance
 
-Ceci est un benchmark [Steampipe][] pour vérifier le respect de quelques rêgles pour nos applications hébergé par [Scalingo][].
+Ceci est un benchmark [Steampipe][] pour vérifier le respect de quelques règles pour nos applications hébergées par [Scalingo][].
 
 Pour jouer ces rêgles:
 1. Installer [Steampipe][]
