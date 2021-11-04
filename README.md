@@ -2,7 +2,7 @@
 
 Ceci est un benchmark [Steampipe][] pour vérifier le respect de quelques règles pour nos applications hébergées par [Scalingo][].
 
-Pour jouer ces rêgles:
+Pour jouer ces règles:
 1. Installer [Steampipe][]
 1. Installer et configurer le plugin scalingo: `steampipe plugin install francois2metz/scalingo`
 1. Cloner ce dépot
