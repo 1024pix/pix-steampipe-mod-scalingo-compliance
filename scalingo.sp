@@ -67,7 +67,7 @@ control "scalingo_app_owner_must_be_pix" {
 
 control "scalingo_router_logs_are_activated_on_production" {
   title    = "Les logs routeur sont activé en production."
-  severity = "hight"
+  severity = "high"
   sql      =  <<-EOT
     select
       name as resource,
