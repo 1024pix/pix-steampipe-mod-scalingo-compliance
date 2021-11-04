@@ -7,7 +7,7 @@ benchmark "scalingo" {
 }
 
 control "scalingo_app_name_start_with_pix" {
-  title    = "Le nom des applications Scalingo commencent par pix-"
+  title    = "Le nom de l'application Scalingo commence par pix-"
   severity = "medium"
   sql      =  <<-EOT
     select
@@ -26,7 +26,7 @@ control "scalingo_app_name_start_with_pix" {
 }
 
 control "scalingo_app_name_end_with_type" {
-  title    = "Le nom des applications Scalingo finissent par leur type."
+  title    = "Le nom de l'aapplication Scalingo finis par son type."
   severity = "medium"
   sql      =  <<-EOT
     select
