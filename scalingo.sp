@@ -1,30 +1,39 @@
+variable "app_name_prefix" {
+  type    = string
+  default = "pix-"
+}
+
 benchmark "scalingo" {
   title    = "Scalingo"
   children = [
-    control.scalingo_app_name_start_with_pix,
+    control.scalingo_app_name_prefix,
     control.scalingo_app_name_end_with_type,
     control.scalingo_app_owner_must_be_pix,
     control.scalingo_router_logs_are_activated_on_production
   ]
 }
 
-control "scalingo_app_name_start_with_pix" {
-  title    = "Le nom de l'application Scalingo commence par pix-"
+control "scalingo_app_name_prefix" {
+  title    = "Le nom de l'application Scalingo a le bon préfixe"
   severity = "medium"
   sql      =  <<-EOT
     select
       name as resource,
       case
-        when starts_with(name, 'pix-') then 'ok'
+        when starts_with(name, $1) then 'ok'
         else 'alarm'
       end as status,
       case
-        when starts_with(name, 'pix-') then 'L''application ' || name || ' commence par pix-'
-        else  'L''application ' || name || ' ne commence pas par pix-.'
+        when starts_with(name, $1) then 'L''application ' || name || ' commence par ' || $1
+        else  'L''application ' || name || ' ne commence pas par ' || $1
       end as reason
     from
       scalingo_app
   EOT
+
+  param "prefix" {
+    default = var.app_name_prefix
+  }
 }
 
 control "scalingo_app_name_end_with_type" {
