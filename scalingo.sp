@@ -28,7 +28,7 @@ control "scalingo_app_name_start_with_pix" {
 }
 
 control "scalingo_app_name_end_with_type" {
-  title    = "Le nom de l'aapplication Scalingo finis par son type."
+  title    = "Le nom de l'application Scalingo finis par son type."
   severity = "medium"
   sql      =  <<-EOT
     select
