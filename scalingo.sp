@@ -8,12 +8,17 @@ variable "app_name_suffix" {
   default = "-(production|review|integration|recette|sandbox|preview|pr[0-9]+)"
 }
 
+variable "app_owners" {
+  type    = list(string)
+  default = ["pix-dev", "pix-prod"]
+}
+
 benchmark "scalingo" {
   title    = "Scalingo"
   children = [
     control.scalingo_app_name_prefix,
     control.scalingo_app_name_suffix,
-    control.scalingo_app_owner_must_be_pix,
+    control.scalingo_app_owner,
     control.scalingo_router_logs_are_activated_on_production
   ]
 }
@@ -64,23 +69,24 @@ control "scalingo_app_name_suffix" {
   }
 }
 
-control "scalingo_app_owner_must_be_pix" {
-  title    = "Le propriétaire de l'application doit être pix-dev ou pix-prod."
+control "scalingo_app_owner" {
+  title    = "Le propriétaire de l'application est normalisé."
   severity = "critical"
   sql      =  <<-EOT
     select
       name as resource,
       case
-        when owner_username IN ('pix-dev', 'pix-prod') then 'ok'
+        when owner_username = any($1) then 'ok'
         else 'alarm'
       end as status,
-      case
-        when owner_username NOT IN ('pix-dev', 'pix-prod') then 'L''application ' || name || ' n''a pas le bon propriétaire ' || owner_username || '.'
-        else  'L''application ' || name || ' appartient bien a ' || owner_username || '.'
-      end as reason
+      'Le propriétaire de l''application ' || name || ' est ' || owner_username || '.' as reason
     from
       scalingo_app
   EOT
+
+  param "owners" {
+    default = var.app_owners
+  }
 }
 
 control "scalingo_router_logs_are_activated_on_production" {
