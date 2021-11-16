@@ -8,5 +8,9 @@ Pour jouer ces règles:
 1. Cloner ce dépot
 1. Lancer la commande: `steampipe check benchmark.scalingo`
 
+Pour exclure certaines applications de la vérification des logs routeurs:
+
+    steampipe check benchmark.scalingo --var='router_logs_exclusion=["pix-app", "pix-app2"]'
+
 [steampipe]: https://steampipe.io/
 [scalingo]: https://scalingo.com/
