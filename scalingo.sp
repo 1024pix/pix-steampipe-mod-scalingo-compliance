@@ -13,6 +13,11 @@ variable "app_owners" {
   default = ["pix-dev", "pix-prod"]
 }
 
+variable "router_logs_exclusion" {
+  type    = list(string)
+  default = [""]
+}
+
 benchmark "scalingo" {
   title    = "Scalingo"
   children = [
@@ -96,7 +101,7 @@ control "scalingo_router_logs_are_activated_on_production" {
     select
       name as resource,
       case
-        when name NOT LIKE '%-production' then 'skip'
+        when (name = any($1) OR name NOT LIKE '%-production') then 'skip'
         when router_logs then 'ok'
         else 'alarm'
       end as status,
@@ -108,4 +113,8 @@ control "scalingo_router_logs_are_activated_on_production" {
     from
       scalingo_app
   EOT
+
+  param "exclusion" {
+    default = var.router_logs_exclusion
+  }
 }
