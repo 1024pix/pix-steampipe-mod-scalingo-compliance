@@ -3,18 +3,23 @@ variable "app_name_prefix" {
   default = "pix-"
 }
 
+variable "app_name_suffix" {
+  type    = string
+  default = "-(production|review|integration|recette|sandbox|preview|pr[0-9]+)"
+}
+
 benchmark "scalingo" {
   title    = "Scalingo"
   children = [
     control.scalingo_app_name_prefix,
-    control.scalingo_app_name_end_with_type,
+    control.scalingo_app_name_suffix,
     control.scalingo_app_owner_must_be_pix,
     control.scalingo_router_logs_are_activated_on_production
   ]
 }
 
 control "scalingo_app_name_prefix" {
-  title    = "Le nom de l'application Scalingo a le bon préfixe"
+  title    = "Le nom de l'application Scalingo a le bon préfixe."
   severity = "medium"
   sql      =  <<-EOT
     select
@@ -24,8 +29,8 @@ control "scalingo_app_name_prefix" {
         else 'alarm'
       end as status,
       case
-        when starts_with(name, $1) then 'L''application ' || name || ' commence par ' || $1
-        else  'L''application ' || name || ' ne commence pas par ' || $1
+        when starts_with(name, $1) then 'L''application ' || name || ' commence par ' || $1 || '.'
+        else  'L''application ' || name || ' ne commence pas par ' || $1 || '.'
       end as reason
     from
       scalingo_app
@@ -36,23 +41,27 @@ control "scalingo_app_name_prefix" {
   }
 }
 
-control "scalingo_app_name_end_with_type" {
-  title    = "Le nom de l'application Scalingo finis par son type."
+control "scalingo_app_name_suffix" {
+  title    = "Le nom de l'application Scalingo a le bon suffixe."
   severity = "medium"
   sql      =  <<-EOT
     select
       name as resource,
       case
-        when name SIMILAR TO '%-(production|review|integration|recette|sandbox|preview|pr[0-9]+)' then 'ok'
+        when name SIMILAR TO '%' || $1 then 'ok'
         else 'alarm'
       end as status,
       case
-        when name SIMILAR TO '%-(production|review|integration|recette|sandbox|preview|pr[0-9]+)' then 'L''application ' || name || ' finit par production/review/integration/recette/sandbox/preview/pr'
-        else  'L''application ' || name || ' ne finit pas par -production/review/integration/recette/sandbox/preview/pr.'
+        when name SIMILAR TO '%' || $1 then 'L''application ' || name || ' finit par ' || $1 || '.'
+        else  'L''application ' || name || ' ne finit pas par ' || $1 || '.'
       end as reason
     from
       scalingo_app
   EOT
+
+  param "suffix" {
+    default = var.app_name_suffix
+  }
 }
 
 control "scalingo_app_owner_must_be_pix" {
