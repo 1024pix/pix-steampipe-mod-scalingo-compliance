@@ -77,8 +77,8 @@ control "scalingo_router_logs_are_activated_on_production" {
         else 'alarm'
       end as status,
       case
-        when name NOT LIKE '%-production' then 'L''aplication ' || name || ' n''est pas de la production.'
-        when not router_logs then 'L''aplication ' || name || ' n''a pas les logs routeurs activés.'
+        when name NOT LIKE '%-production' then 'L''application ' || name || ' n''est pas de la production.'
+        when not router_logs then 'L''application ' || name || ' n''a pas les logs routeurs activés.'
         else  'L''application ' || name || ' a bien les logs routeurs activés.'
       end as reason
     from
