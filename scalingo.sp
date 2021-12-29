@@ -35,11 +35,11 @@ control "scalingo_app_name_prefix" {
     select
       name as resource,
       case
-        when starts_with(name, $1) then 'ok'
+        when name SIMILAR TO $1 || '%' then 'ok'
         else 'alarm'
       end as status,
       case
-        when starts_with(name, $1) then 'L''application ' || name || ' commence par ' || $1 || '.'
+        when name SIMILAR TO $1 || '%' then 'L''application ' || name || ' commence par ' || $1 || '.'
         else  'L''application ' || name || ' ne commence pas par ' || $1 || '.'
       end as reason
     from
