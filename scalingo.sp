@@ -18,13 +18,19 @@ variable "router_logs_exclusion" {
   default = [""]
 }
 
+variable "auto_deploy_exclusion" {
+  type    = list(string)
+  default = [""]
+}
+
 benchmark "scalingo" {
   title    = "Scalingo"
   children = [
     control.scalingo_app_name_prefix,
     control.scalingo_app_name_suffix,
     control.scalingo_app_owner,
-    control.scalingo_router_logs_are_activated_on_production
+    control.scalingo_router_logs_are_activated_on_production,
+    control.scalingo_no_auto_deploy_on_production
   ]
 }
 
@@ -116,5 +122,32 @@ control "scalingo_router_logs_are_activated_on_production" {
 
   param "exclusion" {
     default = var.router_logs_exclusion
+  }
+}
+
+control "scalingo_no_auto_deploy_on_production" {
+  title    = "On ne déploie aucune application de production en auto deploy."
+  severity = "high"
+  sql      =  <<-EOT
+    select
+      app.name as resource,
+      case
+        when (name = any($1) OR app.name NOT LIKE '%-production') then 'skip'
+        when not srl.auto_deploy_enabled then 'ok'
+        else 'alarm'
+      end as status,
+      case
+        when app.name NOT LIKE '%-production' then 'L''application ' || app.name || ' n''est pas de la production.'
+        when not srl.auto_deploy_enabled then 'L''application ' || app.name || ' n''est pas en auto deploy.'
+        else  'L''application ' || app.name || ' est en auto deploy depuis '|| srl.scm_type || ':' || srl.owner || '/ '|| srl.repo ||' sur la branche '|| srl.branch ||'.'
+      end as reason
+    from
+      scalingo_scm_repo_link srl
+    join
+      scalingo_app app on app.id = srl.app_id
+  EOT
+
+  param "exclusion" {
+    default = var.auto_deploy_exclusion
   }
 }
