@@ -43,6 +43,11 @@ variable "log_drain_addon_exclusion" {
   default = [""]
 }
 
+variable "database_reachable_exclusion" {
+  type    = list(string)
+  default = [""]
+}
+
 benchmark "scalingo" {
   title    = "Scalingo"
   children = [
@@ -387,8 +392,8 @@ control "scalingo_no_long_one_off_running" {
 
 
 control "scalingo_database_not_reachable_on_internet" {
-  title    = "Les bases de données ne sont pas accessible sur l'internet."
-  severity = "high"
+  title    = "Les bases de données ne sont pas accessibles sur l'internet."
+  severity = "critical"
   sql      =  <<-EOT
     with apps_and_addons as (
       select
@@ -407,6 +412,7 @@ control "scalingo_database_not_reachable_on_internet" {
     select
       db.app_name as resource,
       case
+        when concat(db.app_name, '_', db.type_name) = any($1) then 'skip'
         when db.publicly_available then 'alarm'
         else 'ok'
       end as status,
@@ -421,4 +427,8 @@ control "scalingo_database_not_reachable_on_internet" {
     on
       ad.id = db.addon_id and ad.app_name = db.app_name
   EOT
+
+  param "exclusion" {
+    default = var.database_reachable_exclusion
+  }
 }
