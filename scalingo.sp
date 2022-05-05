@@ -28,6 +28,16 @@ variable "deploy_review_apps_exclusion" {
   default = [""]
 }
 
+variable "log_drain_exclusion" {
+  type    = list(string)
+  default = [""]
+}
+
+variable "log_drain_addon_exclusion" {
+  type    = list(string)
+  default = [""]
+}
+
 benchmark "scalingo" {
   title    = "Scalingo"
   children = [
@@ -36,7 +46,9 @@ benchmark "scalingo" {
     control.scalingo_app_owner,
     control.scalingo_router_logs_are_activated_on_production,
     control.scalingo_no_auto_deploy_on_production,
-    control.scalingo_no_deploy_review_apps
+    control.scalingo_no_deploy_review_apps,
+    control.scalingo_log_drain_on_production,
+    control.scalingo_log_drain_on_production_addon
   ]
 }
 
@@ -181,5 +193,65 @@ control "scalingo_no_deploy_review_apps" {
 
   param "exclusion" {
     default = var.deploy_review_apps_exclusion
+  }
+}
+
+control "scalingo_log_drain_on_production" {
+  title    = "Les applications de production ont un log drain."
+  severity = "medium"
+
+  sql      =  <<-EOT
+    select
+      app.name as resource,
+      case
+        when app.name = any($1) then 'skip'
+        when sld.url IS NULL then 'alarm'
+        else 'ok'
+      end as status,
+      case
+        when sld.url IS NULL then 'L''application ' || app.name || ' n''a pas de log drain.'
+        else 'L''application ' || app.name || ' a un log drain.'
+      end as reason
+    from
+      scalingo_app app
+    left join
+      scalingo_log_drain sld on app.name = sld.app_name
+    where
+      app.name LIKE '%-production'
+  EOT
+
+  param "exclusion" {
+    default = var.log_drain_exclusion
+  }
+}
+
+control "scalingo_log_drain_on_production_addon" {
+  title    = "Les addons de production ont un log drain."
+  severity = "medium"
+
+  sql      =  <<-EOT
+    select
+      app.name as resource,
+      case
+        when concat(app.name, '_', addon.provider_id) = any($1) then 'skip'
+        when sld.url IS NULL then 'alarm'
+        else 'ok'
+      end as status,
+      case
+        when sld.url IS NULL then 'L''addon ' || addon.provider_name || ' de l''application ' || app.name || ' n''a pas de log drain.'
+        else 'L''addon ' || addon.provider_name || ' de l''application ' || app.name || ' a un log drain.'
+      end as reason
+    from
+      scalingo_app app
+    join
+      scalingo_addon addon on addon.app_name = app.name
+    left join
+      scalingo_log_drain_addon sld on addon.id = sld.id and sld.app_name = addon.app_name
+    where
+      app.name LIKE '%-production'
+  EOT
+
+  param "exclusion" {
+    default = var.log_drain_addon_exclusion
   }
 }
