@@ -4,7 +4,8 @@ Ceci est un benchmark [Steampipe][] pour vérifier le respect de quelques règle
 
 Pour jouer ces règles:
 1. Installer [Steampipe][]
-1. Installer et configurer le plugin scalingo: `steampipe plugin install francois2metz/scalingo`
+1. Installer le plugin scalingo: `steampipe plugin install francois2metz/scalingo`
+1. Éditer le fichier `~/.steampipe/config/scalingo.spc` pour ajouter un [token API Scalingo][]
 1. Cloner ce dépot
 1. Lancer la commande: `steampipe check benchmark.scalingo`
 
@@ -14,3 +15,4 @@ Pour exclure certaines applications de la vérification des logs routeurs:
 
 [steampipe]: https://steampipe.io/
 [scalingo]: https://scalingo.com/
+[token api scalingo]: https://dashboard.scalingo.com/account/token
