@@ -48,7 +48,8 @@ benchmark "scalingo" {
     control.scalingo_no_auto_deploy_on_production,
     control.scalingo_no_deploy_review_apps,
     control.scalingo_log_drain_on_production,
-    control.scalingo_log_drain_on_production_addon
+    control.scalingo_log_drain_on_production_addon,
+    control.scalingo_no_long_one_off_running
   ]
 }
 
@@ -254,4 +255,25 @@ control "scalingo_log_drain_on_production_addon" {
   param "exclusion" {
     default = var.log_drain_addon_exclusion
   }
+}
+
+control "scalingo_no_long_one_off_running" {
+  title    = "Aucun one-off ne tourne depuis plus de 24h."
+  severity = "medium"
+
+  sql      =  <<-EOT
+    select
+      c.label as resource,
+      case
+        when c.created_at < (current_timestamp - interval '1' day) then 'alarm'
+        else 'ok'
+      end as status,
+      'Le container one-off ' || c.label || ' de l''application ' || app.name || ' tourne depuis ' || date_part('hours', now() - c.created_at) || ' heures.' as reason
+    from
+      scalingo_app app
+    join
+      scalingo_container c on c.app_name = app.name
+    where
+      c.type = 'one-off'
+  EOT
 }
