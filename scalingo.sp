@@ -268,7 +268,7 @@ control "scalingo_no_long_one_off_running" {
         when c.created_at < (current_timestamp - interval '1' day) then 'alarm'
         else 'ok'
       end as status,
-      'Le container one-off ' || c.label || ' de l''application ' || app.name || ' tourne depuis ' || date_part('hours', now() - c.created_at) || ' heures.' as reason
+      'Le container ' || c.label || ' de l''application ' || app.name || ' tourne depuis ' || age(now(), c.created_at) || '.' as reason
     from
       scalingo_app app
     join
