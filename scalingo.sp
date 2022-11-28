@@ -23,6 +23,11 @@ variable "auto_deploy_exclusion" {
   default = [""]
 }
 
+variable "linked_repository_exclusion" {
+  type    = list(string)
+  default = [""]
+}
+
 variable "deploy_review_apps_exclusion" {
   type    = list(string)
   default = [""]
@@ -46,6 +51,7 @@ benchmark "scalingo" {
     control.scalingo_app_owner,
     control.scalingo_router_logs_are_activated_on_production,
     control.scalingo_no_auto_deploy_on_production,
+    control.scalingo_no_linked_repository_on_production,
     control.scalingo_no_deploy_review_apps,
     control.scalingo_log_drain_on_production,
     control.scalingo_log_drain_on_production_addon,
@@ -168,6 +174,33 @@ control "scalingo_no_auto_deploy_on_production" {
 
   param "exclusion" {
     default = var.auto_deploy_exclusion
+  }
+}
+
+control "scalingo_no_linked_repository_on_production" {
+  title    = "Aucun repository n'est lié à une application de production."
+  severity = "critical"
+  sql      =  <<-EOT
+    select
+      app.name as resource,
+      case
+        when (name = any($1) OR app.name NOT LIKE '%-production') then 'skip'
+        when srl.repo is null then 'ok'
+        else 'alarm'
+      end as status,
+      case
+        when app.name NOT LIKE '%-production' then 'L''application ' || app.name || ' n''est pas de la production.'
+        when srl.repo IS NULL then 'L''application ' || app.name || ' n''est pas liée à un repository.'
+        else  'L''application ' || app.name || ' est liée au repository '|| srl.scm_type || ':' || srl.owner || '/'|| srl.repo || '.'
+      end as reason
+    from
+      scalingo_all.scalingo_scm_repo_link srl
+    left join
+      scalingo_all.scalingo_app app on app.id = srl.app_id
+  EOT
+
+  param "exclusion" {
+    default = var.linked_repository_exclusion
   }
 }
 
