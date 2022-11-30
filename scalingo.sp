@@ -182,21 +182,33 @@ control "scalingo_no_linked_repository_on_production" {
   severity = "critical"
   sql      =  <<-EOT
     select
-      app.name as resource,
+      name as resource,
       case
-        when (name = any($1) OR app.name NOT LIKE '%-production') then 'skip'
-        when srl.repo is null then 'ok'
+        when name = any($1) then 'skip'
+        when link is null then 'ok'
         else 'alarm'
       end as status,
       case
-        when app.name NOT LIKE '%-production' then 'L''application ' || app.name || ' n''est pas de la production.'
-        when srl.repo IS NULL then 'L''application ' || app.name || ' n''est pas liée à un repository.'
-        else  'L''application ' || app.name || ' est liée au repository '|| srl.scm_type || ':' || srl.owner || '/'|| srl.repo || '.'
+        when link IS NULL then 'L''application ' || name || ' n''est pas liée à un repository.'
+        else  'L''application ' || name || ' est liée au repository '|| link || '.'
       end as reason
     from
-      scalingo_scm_repo_link srl
-    left join
-      scalingo_app app on app.id = srl.app_id
+      (
+        select
+          name,
+          (
+            select
+              scm_type || ':' || owner || '/' || repo
+            from
+              scalingo_scm_repo_link
+            where
+              app_name = name
+          ) as link
+        from
+          scalingo_app app
+        where
+          name LIKE '%-production'
+      ) as app_with_repo_link
   EOT
 
   param "exclusion" {
