@@ -194,9 +194,9 @@ control "scalingo_no_linked_repository_on_production" {
         else  'L''application ' || app.name || ' est liée au repository '|| srl.scm_type || ':' || srl.owner || '/'|| srl.repo || '.'
       end as reason
     from
-      scalingo_all.scalingo_scm_repo_link srl
+      scalingo_scm_repo_link srl
     left join
-      scalingo_all.scalingo_app app on app.id = srl.app_id
+      scalingo_app app on app.id = srl.app_id
   EOT
 
   param "exclusion" {
