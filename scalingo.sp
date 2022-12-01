@@ -52,6 +52,7 @@ benchmark "scalingo" {
     control.scalingo_router_logs_are_activated_on_production,
     control.scalingo_no_auto_deploy_on_production,
     control.scalingo_no_linked_repository_on_production,
+    control.scalingo_no_repository_outside_organisation,
     control.scalingo_no_deploy_review_apps,
     control.scalingo_log_drain_on_production,
     control.scalingo_log_drain_on_production_addon,
@@ -175,6 +176,27 @@ control "scalingo_no_auto_deploy_on_production" {
   param "exclusion" {
     default = var.auto_deploy_exclusion
   }
+}
+
+control "scalingo_no_repository_outside_organisation" {
+  title    = "Aucune application n'est liée à un repository dont le propriétaire n'est pas l'organisation pix"
+  severity = "critical"
+  sql      =  <<-EOT
+    select
+      app.name as resource,
+      case
+        when (linker_username NOT IN ('pix-dev', 'pix-prod') ) then 'alarm'
+        else 'ok'
+      end as status,
+      case
+        when (linker_username NOT IN ('pix-dev', 'pix-prod') ) then 'L''application ' || app.name || ' est liée à un utilisateur non générique : ' || linker_username || '.'
+        else  'L''application ' || app.name || ' est bien liée à un utilisateur générique : ' || linker_username || '.'
+      end as reason
+    from
+      scalingo_scm_repo_link srl
+    join
+      scalingo_app app on app.id = srl.app_id
+  EOT
 }
 
 control "scalingo_no_linked_repository_on_production" {
