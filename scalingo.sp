@@ -70,10 +70,7 @@ control "scalingo_app_name_prefix" {
         when name SIMILAR TO $1 || '%' then 'ok'
         else 'alarm'
       end as status,
-      case
-        when name SIMILAR TO $1 || '%' then 'L''application ' || name || ' commence par ' || $1 || '.'
-        else  'L''application ' || name || ' ne commence pas par ' || $1 || '.'
-      end as reason
+      'L''application ' || name || ' commence par ' || $1 || '.' as reason
     from
       scalingo_app
   EOT
@@ -93,10 +90,7 @@ control "scalingo_app_name_suffix" {
         when name SIMILAR TO '%' || $1 then 'ok'
         else 'alarm'
       end as status,
-      case
-        when name SIMILAR TO '%' || $1 then 'L''application ' || name || ' finit par ' || $1 || '.'
-        else  'L''application ' || name || ' ne finit pas par ' || $1 || '.'
-      end as reason
+      'L''application ' || name || ' finit par ' || $1 || '.' as reason
     from
       scalingo_app
   EOT
