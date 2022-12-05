@@ -133,17 +133,18 @@ control "scalingo_router_logs_are_activated_on_production" {
     select
       name as resource,
       case
-        when (name = any($1) OR name NOT LIKE '%-production') then 'skip'
+        when name = any($1) then 'skip'
         when router_logs then 'ok'
         else 'alarm'
       end as status,
       case
-        when name NOT LIKE '%-production' then 'L''application ' || name || ' n''est pas de la production.'
         when not router_logs then 'L''application ' || name || ' n''a pas les logs routeurs activés.'
         else  'L''application ' || name || ' a bien les logs routeurs activés.'
       end as reason
     from
       scalingo_app
+    where
+      name LIKE '%-production'
   EOT
 
   param "exclusion" {
