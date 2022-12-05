@@ -52,7 +52,7 @@ benchmark "scalingo" {
     control.scalingo_router_logs_are_activated_on_production,
     control.scalingo_no_auto_deploy_on_production,
     control.scalingo_no_linked_repository_on_production,
-    control.scalingo_no_repository_outside_organisation,
+    control.scalingo_repo_linked_by_app_owner,
     control.scalingo_no_deploy_review_apps,
     control.scalingo_log_drain_on_production,
     control.scalingo_log_drain_on_production_addon,
@@ -178,24 +178,35 @@ control "scalingo_no_auto_deploy_on_production" {
   }
 }
 
-control "scalingo_no_repository_outside_organisation" {
-  title    = "Aucune application n'est liée à un repository dont le propriétaire n'est pas l'organisation pix"
+control "scalingo_repo_linked_by_app_owner" {
+  title    = "Le code de toutes les applications est lié par le compte de leur owner"
   severity = "critical"
   sql      =  <<-EOT
-    select
-      app.name as resource,
+select
+      name as resource,
       case
-        when (linker_username NOT IN ('pix-dev', 'pix-prod') ) then 'alarm'
+        when (linker_username <> owner_username  ) then 'alarm'
         else 'ok'
       end as status,
-      case
-        when (linker_username NOT IN ('pix-dev', 'pix-prod') ) then 'L''application ' || app.name || ' est liée à un utilisateur non générique : ' || linker_username || '.'
-        else  'L''application ' || app.name || ' est bien liée à un utilisateur générique : ' || linker_username || '.'
-      end as reason
+      'Le code de l''application ' || name || ' dont le owner est ' || owner_username || ' est lié via le compte  : ' || linker_username || '.' AS reason
     from
-      scalingo_scm_repo_link srl
-    join
-      scalingo_app app on app.id = srl.app_id
+      (
+        select
+          name,
+          owner_username,
+          (
+            select
+              linker_username
+            from
+              scalingo_scm_repo_link
+            where
+              app_name = name
+          ) as linker_username
+        from
+          scalingo_app app
+      ) AS app_with_repo_link
+      WHERE app_with_repo_link.linker_username IS NOT NULL
+      ;
   EOT
 }
 
