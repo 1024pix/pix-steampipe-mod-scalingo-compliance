@@ -182,10 +182,10 @@ control "scalingo_repo_linked_by_app_owner" {
   title    = "Le code de toutes les applications est lié par le compte de leur owner"
   severity = "critical"
   sql      =  <<-EOT
-select
+    select
       name as resource,
       case
-        when (linker_username <> owner_username  ) then 'alarm'
+        when (linker_username <> owner_username) then 'alarm'
         else 'ok'
       end as status,
       'Le code de l''application ' || name || ' dont le owner est ' || owner_username || ' est lié via le compte  : ' || linker_username || '.' AS reason
