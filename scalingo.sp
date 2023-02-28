@@ -170,7 +170,7 @@ control "scalingo_no_auto_deploy_on_production" {
     from
       scalingo_scm_repo_link srl
     join
-      scalingo_app app on app.id = srl.app_id
+      scalingo_app app on app.name = srl.app_name
   EOT
 
   param "exclusion" {
@@ -267,7 +267,7 @@ control "scalingo_no_deploy_review_apps" {
     from
       scalingo_scm_repo_link srl
     join
-      scalingo_app app on app.id = srl.app_id
+      scalingo_app app on app.name = srl.app_name
   EOT
 
   param "exclusion" {
