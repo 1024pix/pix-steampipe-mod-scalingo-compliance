@@ -4,7 +4,7 @@ mod "pix_scalingo" {
 
   require {
     plugin "francois2metz/scalingo" {
-      version = "0.0.8"
+      version = "0.15.0"
     }
   }
 }

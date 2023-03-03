@@ -327,7 +327,8 @@ control "scalingo_log_drain_on_production_addon" {
     left join
       scalingo_log_drain_addon sld on addon.id = sld.id and sld.app_name = addon.app_name
     where
-      app.name LIKE '%-production'
+      app.name LIKE '%-production' and
+      addon.provider_id != 'tcp-gateway'
   EOT
 
   param "exclusion" {
