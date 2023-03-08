@@ -155,22 +155,36 @@ control "scalingo_no_auto_deploy_on_production" {
   title    = "On ne déploie aucune application de production en auto deploy."
   severity = "critical"
   sql      =  <<-EOT
+    with apps_and_link as (
+      select
+        name,
+        owner_username,
+        (
+          select
+            auto_deploy_enabled
+          from
+            scalingo_scm_repo_link
+          where
+            app_name = name
+        ) as auto_deploy_enabled
+      from
+        scalingo_app app
+      where
+        app.name LIKE '%-production'
+    )
     select
-      app.name as resource,
+      name as resource,
       case
-        when (name = any($1) OR app.name NOT LIKE '%-production') then 'skip'
-        when not srl.auto_deploy_enabled then 'ok'
+        when (name = any($1) or auto_deploy_enabled is null) then 'skip'
+        when not auto_deploy_enabled then 'ok'
         else 'alarm'
       end as status,
       case
-        when app.name NOT LIKE '%-production' then 'L''application ' || app.name || ' n''est pas de la production.'
-        when not srl.auto_deploy_enabled then 'L''application ' || app.name || ' n''est pas en auto deploy.'
-        else  'L''application ' || app.name || ' est en auto deploy depuis '|| srl.scm_type || ':' || srl.owner || '/ '|| srl.repo ||' sur la branche '|| srl.branch ||'.'
+        when not auto_deploy_enabled then 'L''application ' || name || ' n''est pas en auto deploy.'
+        else 'L''application ' || name || ' est en auto deploy.'
       end as reason
     from
-      scalingo_scm_repo_link srl
-    join
-      scalingo_app app on app.name = srl.app_name
+      apps_and_link
   EOT
 
   param "exclusion" {
@@ -182,6 +196,21 @@ control "scalingo_repo_linked_by_app_owner" {
   title    = "Le code de toutes les applications est lié par le compte de leur owner"
   severity = "critical"
   sql      =  <<-EOT
+    with apps_and_link as (
+      select
+        name,
+        owner_username,
+        (
+          select
+            linker_username
+          from
+            scalingo_scm_repo_link
+          where
+            app_name = name
+        ) as linker_username
+      from
+        scalingo_app app
+    )
     select
       name as resource,
       case
@@ -190,23 +219,9 @@ control "scalingo_repo_linked_by_app_owner" {
       end as status,
       'Le code de l''application ' || name || ' dont le owner est ' || owner_username || ' est lié via le compte  : ' || linker_username || '.' AS reason
     from
-      (
-        select
-          name,
-          owner_username,
-          (
-            select
-              linker_username
-            from
-              scalingo_scm_repo_link
-            where
-              app_name = name
-          ) as linker_username
-        from
-          scalingo_app app
-      ) AS app_with_repo_link
-      WHERE app_with_repo_link.linker_username IS NOT NULL
-      ;
+      apps_and_link
+    where
+      linker_username is not null;
   EOT
 }
 
@@ -214,34 +229,36 @@ control "scalingo_no_linked_repository_on_production" {
   title    = "Aucun repository n'est lié à une application de production."
   severity = "critical"
   sql      =  <<-EOT
+    with apps_and_link as (
+      select
+        name,
+        owner_username,
+        (
+          select
+            scm_type || ':' || owner || '/' || repo
+          from
+            scalingo_scm_repo_link
+          where
+            app_name = name
+        ) as link
+      from
+        scalingo_app app
+      where
+        app.name LIKE '%-production'
+    )
     select
       name as resource,
       case
-        when name = any($1) then 'skip'
+        when (name = any($1)) then 'skip'
         when link is null then 'ok'
         else 'alarm'
       end as status,
       case
-        when link IS NULL then 'L''application ' || name || ' n''est pas liée à un repository.'
+        when link is null then 'L''application ' || name || ' n''est pas liée à un repository.'
         else  'L''application ' || name || ' est liée au repository '|| link || '.'
       end as reason
     from
-      (
-        select
-          name,
-          (
-            select
-              scm_type || ':' || owner || '/' || repo
-            from
-              scalingo_scm_repo_link
-            where
-              app_name = name
-          ) as link
-        from
-          scalingo_app app
-        where
-          name LIKE '%-production'
-      ) as app_with_repo_link
+      apps_and_link
   EOT
 
   param "exclusion" {
@@ -253,21 +270,34 @@ control "scalingo_no_deploy_review_apps" {
   title    = "Le déploiement des review-apps automatique doit être désactivé."
   severity = "critical"
   sql      =  <<-EOT
+    with apps_and_link as (
+      select
+        name,
+        owner_username,
+        (
+          select
+            deploy_review_apps_enabled
+          from
+            scalingo_scm_repo_link
+          where
+            app_name = name
+        ) as deploy_review_apps_enabled
+      from
+        scalingo_app app
+    )
     select
-      app.name as resource,
+      name as resource,
       case
-        when name = any($1) then 'skip'
-        when not srl.deploy_review_apps_enabled then 'ok'
+        when (name = any($1) or deploy_review_apps_enabled is null) then 'skip'
+        when not deploy_review_apps_enabled then 'ok'
         else 'alarm'
       end as status,
       case
-        when srl.deploy_review_apps_enabled then 'L''application ' || app.name || ' a le déploiement des review apps activé.'
-        else 'L''application ' || app.name || ' n''a pas le déploiement des review apps activé.'
+        when deploy_review_apps_enabled then 'L''application ' || name || ' a le déploiement des review apps activé.'
+        else 'L''application ' || name || ' n''a pas le déploiement des review apps activé.'
       end as reason
     from
-      scalingo_scm_repo_link srl
-    join
-      scalingo_app app on app.name = srl.app_name
+      apps_and_link
   EOT
 
   param "exclusion" {
