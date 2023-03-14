@@ -70,10 +70,7 @@ control "scalingo_app_name_prefix" {
         when name SIMILAR TO $1 || '%' then 'ok'
         else 'alarm'
       end as status,
-      case
-        when name SIMILAR TO $1 || '%' then 'L''application ' || name || ' commence par ' || $1 || '.'
-        else  'L''application ' || name || ' ne commence pas par ' || $1 || '.'
-      end as reason
+      'L''application ' || name || ' commence par ' || $1 || '.' as reason
     from
       scalingo_app
   EOT
@@ -93,10 +90,7 @@ control "scalingo_app_name_suffix" {
         when name SIMILAR TO '%' || $1 then 'ok'
         else 'alarm'
       end as status,
-      case
-        when name SIMILAR TO '%' || $1 then 'L''application ' || name || ' finit par ' || $1 || '.'
-        else  'L''application ' || name || ' ne finit pas par ' || $1 || '.'
-      end as reason
+      'L''application ' || name || ' finit par ' || $1 || '.' as reason
     from
       scalingo_app
   EOT
@@ -133,17 +127,18 @@ control "scalingo_router_logs_are_activated_on_production" {
     select
       name as resource,
       case
-        when (name = any($1) OR name NOT LIKE '%-production') then 'skip'
+        when name = any($1) then 'skip'
         when router_logs then 'ok'
         else 'alarm'
       end as status,
       case
-        when name NOT LIKE '%-production' then 'L''application ' || name || ' n''est pas de la production.'
         when not router_logs then 'L''application ' || name || ' n''a pas les logs routeurs activés.'
         else  'L''application ' || name || ' a bien les logs routeurs activés.'
       end as reason
     from
       scalingo_app
+    where
+      name LIKE '%-production'
   EOT
 
   param "exclusion" {
