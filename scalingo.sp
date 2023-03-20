@@ -279,6 +279,8 @@ control "scalingo_no_deploy_review_apps" {
         ) as deploy_review_apps_enabled
       from
         scalingo_app app
+      where
+        name NOT LIKE '%review-pr%'
     )
     select
       name as resource,
