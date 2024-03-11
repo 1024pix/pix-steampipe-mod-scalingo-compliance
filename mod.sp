@@ -4,7 +4,7 @@ mod "pix_scalingo" {
 
   require {
     plugin "francois2metz/scalingo" {
-      version = "0.15.0"
+      min_version = "0.15.0"
     }
   }
 }
