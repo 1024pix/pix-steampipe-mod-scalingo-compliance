@@ -43,6 +43,11 @@ variable "log_drain_addon_exclusion" {
   default = [""]
 }
 
+variable "database_reachable_exclusion" {
+  type    = list(string)
+  default = [""]
+}
+
 benchmark "scalingo" {
   title    = "Scalingo"
   children = [
@@ -56,7 +61,8 @@ benchmark "scalingo" {
     control.scalingo_no_deploy_review_apps,
     control.scalingo_log_drain_on_production,
     control.scalingo_log_drain_on_production_addon,
-    control.scalingo_no_long_one_off_running
+    control.scalingo_no_long_one_off_running,
+    control.scalingo_database_not_reachable_on_internet
   ]
 }
 
@@ -382,4 +388,47 @@ control "scalingo_no_long_one_off_running" {
     where
       c.type = 'one-off'
   EOT
+}
+
+
+control "scalingo_database_not_reachable_on_internet" {
+  title    = "Les bases de données ne sont pas accessibles sur l'internet."
+  severity = "critical"
+  sql      =  <<-EOT
+    with apps_and_addons as (
+      select
+        ad.id as id,
+        ad.app_name as app_name
+      from
+        scalingo_app app
+      join
+        scalingo_addon ad
+      on
+        ad.app_name = app.name
+      order by
+         id
+    )
+
+    select
+      db.app_name as resource,
+      case
+        when concat(db.app_name, '_', db.type_name) = any($1) then 'skip'
+        when db.publicly_available then 'alarm'
+        else 'ok'
+      end as status,
+      case
+        when db.publicly_available then 'L''application ' || db.app_name || ' a la base ' || db.type_name || ' accessible sur internet.'
+        else 'L''application ' || db.app_name || ' a la base ' || db.type_name || ' accessible uniquement depuis scalingo.'
+      end as reason
+    from
+      scalingo_database db
+    inner join
+      apps_and_addons ad
+    on
+      ad.id = db.addon_id and ad.app_name = db.app_name
+  EOT
+
+  param "exclusion" {
+    default = var.database_reachable_exclusion
+  }
 }
